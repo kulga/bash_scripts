@@ -1,26 +1,73 @@
 #!/bin/bash
 
 # Converts Audio Media Library to another format
-while getopts "tson" opt; do
+if [ ! $1 ]
+  then
+    echo "-t target directory"
+    echo "-s source directory"
+    echo "-o old format"
+    echo "-n new format"
+    echo "-p parallel"
+    exit 1
+fi
+
+while getopts "t:s:o:pn:z:" opt; do
   case $opt in
     t)
-      target_directory=$OPTARG
+      target_directory="$OPTARG"
       ;;
     s)
-      source_directory=$OPTARG
+      source_directory="$OPTARG"
       ;;
     o)
-      old_format=$OPTARG
+      old_format="$OPTARG"
+      ;;
+    p)
+      parallel=true
       ;;
     n)
-      new_format=$OPTARG
+      new_format="$OPTARG"
+      ;;
+    z)
+      extra_options="$OPTARG"
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit
       ;;
   esac
 done
 
+if [ -d "$target_directory" ]
+  then
+    echo "-t directory "$target_directory" must not exist"
+    echo "use -t on a non-existant directory"
+    echo Exiting
+    exit 1
+fi
+if [ ! -d "$source_directory" ]
+  then
+    echo "-s directory "$source_directory" does not exist"
+    echo Exiting
+    exit 1
+fi
+
 cp -rl "$source_directory" "$target_directory";
 
+# If -p for kernel parallel utilization
+if [ "${parallel:-false}" == true ]
+  then
+    while read output
+      do
+        (
+          ffmpeg -i "$output" -loglevel error -q:a 6 -ar 44300 "$output".$new_format
+          echo Completed "${output%%$old_format}$new_format"
+          rm "$output"
+        ) &
+    done < <(find "$target_directory" -type f -iname \*$old_format -print)
+  else
+    find "$target_directory" -type f -iname \*$old_format -print -execdir ffmpeg -i {} $extra_options -loglevel error -q:a 6 {}.$new_format \; -execdir rm {} +;
+fi
+wait
 
-
-find $target_directory -type f -iname \*$old_format -print -execdir ffmpeg -i {} -loglevel error -q:a 6 -ar 44300 {}.$new_format & \; -execdir rm {} +; 
-find $target_directory -type f -iname \*.$old_format.$new_format -execdir rename "s/$old_format.$new_format/$new_format/" {} +;
+find "$target_directory" -type f -iname \*.$old_format.$new_format -execdir rename "s/$old_format.$new_format/$new_format/" {} +;
