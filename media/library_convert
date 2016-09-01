@@ -19,5 +19,8 @@ while getopts "tson" opt; do
 done
 
 cp -rl "$source_directory" "$target_directory";
-fitarget_directory $target_directory -type f -iname \*$old_format -print -execdir ffmpeg -i {} -loglevel error -q:a 6 -ar 44300 {}.$new_format & \; -execdir rm {} +;
-fitarget_directory $target_directory -type f -iname \*.$old_format.$new_format -execdir rename "s/$old_format.$new_format/$new_format/" {} +;
+
+
+
+find $target_directory -type f -iname \*$old_format -print -execdir ffmpeg -i {} -loglevel error -q:a 6 -ar 44300 {}.$new_format & \; -execdir rm {} +; 
+find $target_directory -type f -iname \*.$old_format.$new_format -execdir rename "s/$old_format.$new_format/$new_format/" {} +;
