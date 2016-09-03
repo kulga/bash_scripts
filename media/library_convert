@@ -60,13 +60,13 @@ if [ "${parallel:-false}" == true ]
     while read output
       do
         (
-          ffmpeg -i "$output" -loglevel error -q:a 6 -ar 44300 "$output".$new_format
+          ffmpeg -i "$output" $extra_options -loglevel error "$output".$new_format
           echo Completed "${output%%$old_format}$new_format"
           rm "$output"
         ) &
     done < <(find "$target_directory" -type f -iname \*$old_format -print)
   else
-    find "$target_directory" -type f -iname \*$old_format -print -execdir ffmpeg -i {} $extra_options -loglevel error -q:a 6 {}.$new_format \; -execdir rm {} +;
+    find "$target_directory" -type f -iname \*$old_format -print -execdir ffmpeg -i {} $extra_options -loglevel error {}.$new_format \; -execdir rm {} +;
 fi
 wait
 
