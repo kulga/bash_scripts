@@ -1,0 +1,43 @@
+#!/bin/bash
+
+##
+# Converts media files to gif images
+# Permits control 
+
+if [ ! -f $input_file ]
+  then
+    echo "-t seek file"
+    echo "-s scale size of file eg 320"
+    echo "-d stop_time of convert"
+    echo "-f frames per second"
+    echo "-i input file"
+    exit 1
+fi
+
+while getopts "f:i:l:s:t:" opt; do
+  case $opt in
+    f)
+      fps="$OPTARG"
+      ;;
+    i)
+      input_file="$OPTARG"
+      ;;
+    l)
+      scale_size="$OPTARG"
+      ;;
+    s)
+      stop_time="-to $OPTARG"
+      ;;
+    t)
+      seek_time="$OPTARG"
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit
+      ;;
+  esac
+done
+
+
+ffmpeg -y -ss ${seek_time:-0} -i "$input_file" $stop_time -vf "fps="${fps:-10}",scale=${scale_size:-320}:-1:flags=lanczos,palettegen" /tmp/.p.png
+ffmpeg -ss ${seek_time:-0} -i "$input_file" -i /tmp/.p.png $stop_time -filter_complex "fps=${fps:-10},scale=${scale_size:-320}:-1:flags=lanczos[x][x][1:v]paletteuse" "${input_file%.*}".gif
